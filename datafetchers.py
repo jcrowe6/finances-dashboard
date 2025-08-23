@@ -35,7 +35,7 @@ def fetch_transaction_df_by_daterange(
         (start_date, end_date),
     )
     jsons = [json.loads(d[0]) for d in r.fetchall()]
-    return add_columns(pd.json_normalize(jsons))
+    return transform(pd.json_normalize(jsons))
 
 
 def fetch_transaction_df_all() -> pd.DataFrame:
@@ -48,13 +48,18 @@ def fetch_transaction_df_all() -> pd.DataFrame:
     for col in df.columns:
         if col != "amount":
             df[col] = df[col].astype(str)
-    return add_columns(df)
+    return transform(df)
 
 
-def add_columns(df) -> pd.DataFrame:
+def transform(df) -> pd.DataFrame:
     df["date"] = pd.to_datetime(df["date"])
     df["Month"] = df["date"].dt.to_period("M")
     df["Month_Name"] = df["date"].dt.strftime("%B %Y")
+    aldirows = df.merchant_name == "Aldi"
+    df.loc[aldirows, "personal_finance_category.primary"] = "GENERAL_MERCHANDISE"
+    df.loc[aldirows, "personal_finance_category.detailed"] = (
+        "GENERAL_MERCHANDISE_SUPERSTORES"
+    )
     df = df[df.merchant_name != base64.b64decode("UGF0cmVvbg==").decode("utf-8")]
     return df
 
