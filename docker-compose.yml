@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  finance-dashboard:
+    build: .
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./data:/app/data
+      - .:/app
+    environment:
+      - SECRET_KEY=dev-secret-key
+      - DASHBOARD_PASSWORD=dev-password
+      - DATA_DIR=/app/data
+      - FLASK_ENV=development
+    restart: unless-stopped

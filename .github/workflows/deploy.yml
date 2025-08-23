@@ -1,0 +1,81 @@
+name: Build and Deploy Finance Dashboard
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/finance-dashboard
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            # Pull latest image
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            
+            # Stop existing container
+            docker stop finance-dashboard || true
+            docker rm finance-dashboard || true
+            
+            # Run new container
+            docker run -d \
+              --name finance-dashboard \
+              --restart unless-stopped \
+              -p 127.0.0.1:5001:5000 \
+              -v /var/lib/finance-dashboard/data:/app/data \
+              -e SECRET_KEY="${{ secrets.SECRET_KEY }}" \
+              -e DASHBOARD_PASSWORD="${{ secrets.DASHBOARD_PASSWORD }}" \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            
+            # Clean up old images
+            docker image prune -f
