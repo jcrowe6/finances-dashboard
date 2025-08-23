@@ -55,7 +55,13 @@ app.layout = dbc.Container(
         ),
         dbc.Row(
             dbc.Col(
-                html.H2("American Express Treemap", className="text-center mb-4"),
+                html.H1(id="total-spending-value", className="text-center mb-4"),
+                width=12,
+            )
+        ),
+        dbc.Row(
+            dbc.Col(
+                html.H2("Spending Treemap", className="text-center mb-4"),
                 width=12,
             )
         ),
@@ -120,6 +126,13 @@ def update_treemap(value):
         margin=dict(l=10, r=10, t=20, b=10),
     )
     return chart
+
+
+@callback(Output("total-spending-value", "children"), Input("month-selection", "value"))
+def update_total_spending(value):
+    dff = purchases_df[purchases_df.Month_Name == value]
+    total = dff["amount"].sum()
+    return f"Total Spending: ${total:,.2f}"
 
 
 if __name__ == "__main__":
