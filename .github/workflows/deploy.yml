@@ -72,6 +72,7 @@ jobs:
               --name finance-dashboard \
               --network bridge \
               --restart unless-stopped \
+              -p 0.0.0.0:5001:5000 \
               -v /var/lib/finance-dashboard/data:/app/data \
               -e SECRET_KEY="${{ secrets.SECRET_KEY }}" \
               -e DASHBOARD_PASSWORD="${{ secrets.DASHBOARD_PASSWORD }}" \
