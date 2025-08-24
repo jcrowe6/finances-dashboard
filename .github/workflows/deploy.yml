@@ -75,6 +75,7 @@ jobs:
               -v /var/lib/finance-dashboard/data:/app/data \
               -e SECRET_KEY="${{ secrets.SECRET_KEY }}" \
               -e DASHBOARD_PASSWORD="${{ secrets.DASHBOARD_PASSWORD }}" \
+              -e DATA_DIR="/app/data" \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             
             # Clean up old images
