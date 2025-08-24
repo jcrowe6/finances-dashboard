@@ -70,7 +70,7 @@ jobs:
             # Run new container
             docker run -d \
               --name finance-dashboard \
-              --network bridge \
+              --network trilium \
               --restart unless-stopped \
               -p 0.0.0.0:5001:5000 \
               -v /var/lib/finance-dashboard/data:/app/data \
