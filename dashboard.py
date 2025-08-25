@@ -2,7 +2,7 @@ from dash import Dash, html, dcc, callback, Output, Input
 import plotly.express as px
 import pandas as pd
 import dash_bootstrap_components as dbc
-from datafetchers import fetch_transaction_df_all
+from datafetchers import fetch_transaction_df_all, fetch_csv_last_modified
 from budget_progress_bars import create_budget_section
 
 
@@ -13,15 +13,8 @@ class FinanceDashboard:
         self.category_colors = category_colors
 
         # Load and process data
-        self.df = fetch_transaction_df_all()
-        self.purchases_df = self.df[self.df.amount > 0]
-
-        # Get month data
-        month_periods = self.df["Month"].sort_values().unique()
-        self.month_names = [
-            self.df[self.df["Month"] == m]["Month_Name"].iloc[0] for m in month_periods
-        ]
-        self.max_month = self.month_names[-1]
+        self.last_modified = 0
+        self.get_and_set_data_if_new()
 
         # Initialize Dash app
         self.app = Dash(
@@ -32,12 +25,32 @@ class FinanceDashboard:
         )
 
         # Set layout and register callbacks
-        self._create_layout()
+        self.app.layout = self._create_layout
         self._register_callbacks()
+
+    def get_and_set_data_if_new(self):
+        current_modified = fetch_csv_last_modified()
+        if current_modified > self.last_modified:
+            print("Refreshing data!")
+            self.df = fetch_transaction_df_all()
+            self.purchases_df = self.df[self.df.amount > 0]
+
+            # Get month data
+            month_periods = self.df["Month"].sort_values().unique()
+            self.month_names = [
+                self.df[self.df["Month"] == m]["Month_Name"].iloc[0]
+                for m in month_periods
+            ]
+            self.max_month = self.month_names[-1]
+            self.last_modified = current_modified
+        else:
+            print("Data is up-to-date.")
 
     def _create_layout(self):
         """Create the dashboard layout"""
-        self.app.layout = dbc.Container(
+        # Refresh data every load
+        self.get_and_set_data_if_new()
+        return dbc.Container(
             [
                 # Header with logout button
                 dbc.Row(
