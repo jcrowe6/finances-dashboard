@@ -337,11 +337,6 @@ class FinanceDashboard:
                                     ],
                                     className="dropdown-container",
                                 ),
-                                # Total spending display
-                                html.Div(
-                                    [html.H1(id="total-spending-value")],
-                                    className="total-spending-card",
-                                ),
                                 # Budget progress section
                                 html.Div(
                                     [
