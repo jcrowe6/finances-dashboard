@@ -3,9 +3,7 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
 
-def create_budget_progress_bar(
-    category, spent_amount, budget_amount, color, icon_url=None
-):
+def create_budget_progress_bar(category, spent_amount, budget_amount, color):
     """
     Create a horizontal progress bar showing budget usage
 
@@ -62,7 +60,7 @@ def create_budget_progress_bar(
         height=60,
         width=None,  # Allow width to be responsive
         autosize=True,
-        margin=dict(l=10, r=10, t=10, b=10, autoexpand=False),
+        margin=dict(l=0, r=0, t=10, b=10, autoexpand=False),
         xaxis=dict(
             showgrid=False,
             showticklabels=False,
@@ -103,19 +101,10 @@ def create_budget_progress_bar(
                             [
                                 html.Div(
                                     [
-                                        html.Img(
-                                            src=icon_url,
-                                            style={
-                                                "width": "24px",
-                                                "height": "24px",
-                                                "marginRight": "8px",
-                                                "verticalAlign": "middle",
-                                            },
-                                        )
-                                        if icon_url
-                                        else None,
                                         html.H5(
-                                            category_to_name[category], className="mb-1"
+                                            category_to_name[category],
+                                            className="mb-1",
+                                            style={"marginRight": "10px"},
                                         ),
                                     ],
                                     style={"display": "flex", "alignItems": "center"},
@@ -123,9 +112,10 @@ def create_budget_progress_bar(
                                 html.B(
                                     f"${spent_amount:,.2f} / ${budget_amount:,.2f}",
                                     className="text-muted",
+                                    style={"whiteSpace": "nowrap"},
                                 ),
                             ],
-                            width=6,
+                            width=8,
                         ),
                         dbc.Col(
                             [
@@ -133,9 +123,10 @@ def create_budget_progress_bar(
                                     status_text,
                                     color=status_color,
                                     className="float-end",
+                                    style={"whiteSpace": "nowrap"},
                                 )
                             ],
-                            width=6,
+                            width=4,
                         ),
                     ],
                     className="mb-2",
@@ -198,16 +189,9 @@ def create_budget_section(purchases_df, budgets):
         # Get color
         color = category_colors.get(category, "darkgray")
 
-        icon_url = None
-        if (
-            not category_data.empty
-            and "personal_finance_category_icon_url" in category_data.columns
-        ):
-            icon_url = category_data["personal_finance_category_icon_url"].iloc[0]
-
         # Create progress bar
         progress_bar = create_budget_progress_bar(
-            category, spent_amount, budget_amount, color, icon_url
+            category, spent_amount, budget_amount, color
         )
         progress_bars.append(progress_bar)
 

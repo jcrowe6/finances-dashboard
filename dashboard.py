@@ -108,8 +108,8 @@ class FinanceDashboard:
                     .section-card {
                         background: white;
                         border-radius: 15px;
-                        padding: 2rem;
-                        margin: 1.5rem 0;
+                        padding: 1rem;
+                        margin: 1rem 0;
                         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
                         border: 1px solid rgba(0, 0, 0, 0.05);
                         transition: transform 0.2s ease, box-shadow 0.2s ease;
