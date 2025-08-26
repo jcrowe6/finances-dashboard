@@ -16,13 +16,247 @@ class FinanceDashboard:
         self.last_modified = 0
         self.get_and_set_data_if_new()
 
-        # Initialize Dash app
+        # Initialize Dash app with enhanced styling
         self.app = Dash(
             __name__,
             server=server,
-            external_stylesheets=[dbc.themes.BOOTSTRAP],
+            external_stylesheets=[
+                dbc.themes.BOOTSTRAP,
+                "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap",
+            ],
             url_base_pathname="/",
         )
+
+        # Add custom CSS
+        self.app.index_string = """
+        <!DOCTYPE html>
+        <html>
+            <head>
+                {%metas%}
+                <title>{%title%}</title>
+                {%favicon%}
+                {%css%}
+                <style>
+                    body {
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        min-height: 100vh;
+                        margin: 0;
+                    }
+                    
+                    .main-container {
+                        background: rgba(255, 255, 255, 0.95);
+                        backdrop-filter: blur(10px);
+                        border-radius: 20px;
+                        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                        margin: 20px;
+                        min-height: calc(100vh - 40px);
+                    }
+                    
+                    .dashboard-header {
+                        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+                        color: white;
+                        border-radius: 20px 20px 0 0;
+                        padding: 2rem;
+                        text-align: center;
+                        position: relative;
+                        overflow: hidden;
+                    }
+                    
+                    .dashboard-header::before {
+                        content: '';
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+                        pointer-events: none;
+                    }
+                    
+                    .dashboard-header h1 {
+                        font-weight: 700;
+                        font-size: 3rem;
+                        margin: 0;
+                        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+                        position: relative;
+                        z-index: 1;
+                    }
+                    
+                    .content-section {
+                        padding: 2rem;
+                    }
+                    
+                    .total-spending-card {
+                        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+                        color: white;
+                        border-radius: 15px;
+                        padding: 2rem;
+                        text-align: center;
+                        margin: 2rem 0;
+                        box-shadow: 0 10px 30px rgba(72, 187, 120, 0.3);
+                        transform: translateY(-10px);
+                    }
+                    
+                    .total-spending-card h1 {
+                        font-size: 2.5rem;
+                        font-weight: 600;
+                        margin: 0;
+                        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+                    }
+                    
+                    .section-card {
+                        background: white;
+                        border-radius: 15px;
+                        padding: 2rem;
+                        margin: 1.5rem 0;
+                        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                        transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    }
+                    
+                    .section-card:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+                    }
+                    
+                    .section-title {
+                        color: #2d3748;
+                        font-weight: 600;
+                        font-size: 1.75rem;
+                        margin-bottom: 1.5rem;
+                        text-align: center;
+                        position: relative;
+                    }
+                    
+                    .section-title::after {
+                        content: '';
+                        position: absolute;
+                        bottom: -8px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        width: 60px;
+                        height: 3px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        border-radius: 2px;
+                    }
+                    
+                    .dropdown-container {
+                        background: white;
+                        border-radius: 15px;
+                        padding: 1.5rem;
+                        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                        margin: 2rem auto;
+                        max-width: 400px;
+                    }
+                    
+                    .Select-control {
+                        border: 2px solid #e2e8f0 !important;
+                        border-radius: 10px !important;
+                        box-shadow: none !important;
+                        font-weight: 500;
+                    }
+                    
+                    .Select-control:hover {
+                        border-color: #667eea !important;
+                    }
+                    
+                    .color-legend {
+                        background: white;
+                        border-radius: 15px;
+                        padding: 2rem;
+                        margin: 2rem 0;
+                        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                    }
+                    
+                    .color-box {
+                        border-radius: 4px !important;
+                        border: 2px solid rgba(0, 0, 0, 0.1) !important;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    }
+                    
+                    .logout-btn {
+                        position: absolute;
+                        top: 1rem;
+                        right: 2rem;
+                        background: rgba(255, 255, 255, 0.15) !important;
+                        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+                        color: white !important;
+                        font-weight: 500;
+                        padding: 0.5rem 1.5rem;
+                        border-radius: 25px;
+                        text-decoration: none !important;
+                        transition: all 0.2s ease;
+                        backdrop-filter: blur(10px);
+                        z-index: 10;
+                    }
+                    
+                    .logout-btn:hover {
+                        background: rgba(255, 255, 255, 0.25) !important;
+                        border-color: rgba(255, 255, 255, 0.5) !important;
+                        transform: translateY(-1px);
+                    }
+                    
+                    .plotly-graph-div {
+                        border-radius: 10px;
+                        overflow: hidden;
+                    }
+                    
+                    @keyframes slideIn {
+                        from {
+                            opacity: 0;
+                            transform: translateY(20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                    
+                    .section-card {
+                        animation: slideIn 0.6s ease-out;
+                    }
+                    
+                    /* Mobile responsiveness */
+                    @media (max-width: 768px) {
+                        .main-container {
+                            margin: 10px;
+                            min-height: calc(100vh - 20px);
+                        }
+                        
+                        .dashboard-header {
+                            padding: 1.5rem;
+                        }
+                        
+                        .dashboard-header h1 {
+                            font-size: 2rem;
+                        }
+                        
+                        .content-section {
+                            padding: 1rem;
+                        }
+                        
+                        .logout-btn {
+                            position: static;
+                            display: block;
+                            width: fit-content;
+                            margin: 1rem auto 0;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                {%app_entry%}
+                <footer>
+                    {%config%}
+                    {%scripts%}
+                    {%renderer%}
+                </footer>
+            </body>
+        </html>
+        """
 
         # Set layout and register callbacks
         self.app.layout = self._create_layout
@@ -47,110 +281,146 @@ class FinanceDashboard:
             print("Data is up-to-date.")
 
     def _create_layout(self):
-        """Create the dashboard layout"""
+        """Create the enhanced dashboard layout"""
         # Refresh data every load
         self.get_and_set_data_if_new()
-        return dbc.Container(
+
+        return html.Div(
             [
-                # Header with logout button
-                dbc.Row(
-                    dbc.Col(
-                        [
-                            html.A(
-                                "Logout",
-                                href="/logout",
-                                className="btn btn-outline-danger btn-sm",
-                            )
-                        ],
-                        width=12,
-                        className="text-end py-2",
-                    )
-                ),
-                # Main title
-                dbc.Row(
-                    dbc.Col(html.H1("Finances", className="text-center my-4"), width=12)
-                ),
-                # Time period selector
-                dbc.Row(
-                    dbc.Col(
-                        dcc.Dropdown(
-                            options=[
-                                {"label": name, "value": name}
-                                for name in self.month_names
-                            ]
-                            + [{"label": "Last 30 Days", "value": "Last 30 Days"}],
-                            value=self.max_month,
-                            id="timespan-selection",
-                            className="mb-4",
+                html.Div(
+                    [
+                        # Header section
+                        html.Div(
+                            [
+                                html.A(
+                                    "Logout",
+                                    href="/logout",
+                                    className="logout-btn",
+                                ),
+                                html.H1(
+                                    "Financial Dashboard",
+                                    style={"position": "relative", "zIndex": 1},
+                                ),
+                            ],
+                            className="dashboard-header",
                         ),
-                        width={"size": 6, "offset": 3},
-                    )
-                ),
-                # Total spending display
-                dbc.Row(
-                    dbc.Col(
-                        html.H1(
-                            id="total-spending-value", className="text-center mb-4"
+                        # Content section
+                        html.Div(
+                            [
+                                # Time period selector
+                                html.Div(
+                                    [
+                                        html.Label(
+                                            "Select Time Period",
+                                            style={
+                                                "fontWeight": "600",
+                                                "marginBottom": "1rem",
+                                                "display": "block",
+                                                "textAlign": "center",
+                                                "color": "#4a5568",
+                                            },
+                                        ),
+                                        dcc.Dropdown(
+                                            options=[
+                                                {"label": name, "value": name}
+                                                for name in self.month_names
+                                            ]
+                                            + [
+                                                {
+                                                    "label": "Last 30 Days",
+                                                    "value": "Last 30 Days",
+                                                }
+                                            ],
+                                            value=self.max_month,
+                                            id="timespan-selection",
+                                        ),
+                                    ],
+                                    className="dropdown-container",
+                                ),
+                                # Total spending display
+                                html.Div(
+                                    [html.H1(id="total-spending-value")],
+                                    className="total-spending-card",
+                                ),
+                                # Budget progress section
+                                html.Div(
+                                    [
+                                        html.H2("Envelopes", className="section-title"),
+                                        html.Div(id="budget-progress-section"),
+                                    ],
+                                    className="section-card",
+                                ),
+                                # Treemap section
+                                html.Div(
+                                    [
+                                        html.H2(
+                                            "Spending Breakdown",
+                                            className="section-title",
+                                        ),
+                                        dcc.Graph(id="treemap-content"),
+                                    ],
+                                    className="section-card",
+                                ),
+                                # Color legend
+                                html.Div(
+                                    [
+                                        html.H3(
+                                            "Category Legend",
+                                            className="section-title",
+                                            style={"fontSize": "1.5rem"},
+                                        ),
+                                        self._create_color_legend_content(),
+                                    ],
+                                    className="color-legend",
+                                ),
+                            ],
+                            className="content-section",
                         ),
-                        width=12,
-                    )
-                ),
-                # Budget progress section
-                dbc.Row(dbc.Col(html.Div(id="budget-progress-section"), width=12)),
-                # Treemap section
-                dbc.Row(
-                    dbc.Col(
-                        html.H2("Spending Treemap", className="text-center mb-4"),
-                        width=12,
-                    )
-                ),
-                dbc.Row(dbc.Col(dcc.Graph(id="treemap-content"), width=12)),
-                # Color legend
-                self._create_color_legend(),
-            ],
-            fluid=True,
-            className="px-4",
+                    ],
+                    className="main-container",
+                )
+            ]
         )
 
-    def _create_color_legend(self):
-        """Create the color legend for categories"""
-        return dbc.Row(
-            dbc.Col(
-                [
-                    dbc.Row(
-                        [
-                            dbc.Col(
-                                [
-                                    html.Div(
-                                        [
-                                            html.Span(
-                                                className="color-box",
-                                                style={
-                                                    "display": "inline-block",
-                                                    "width": "20px",
-                                                    "height": "20px",
-                                                    "backgroundColor": color,
-                                                    "marginRight": "8px",
-                                                    "border": "1px solid #888",
-                                                    "verticalAlign": "middle",
-                                                },
-                                            ),
-                                            html.Span(
-                                                category,
-                                                style={"verticalAlign": "middle"},
-                                            ),
-                                        ],
-                                        className="d-inline-block me-3 mb-2",
-                                    )
-                                    for category, color in self.category_colors.items()
-                                ],
-                                className="text-center",
-                            )
-                        ],
-                        className="mt-3",
-                    )
-                ]
-            )
+    def _create_color_legend_content(self):
+        """Create enhanced color legend content"""
+        return html.Div(
+            [
+                html.Div(
+                    [
+                        html.Div(
+                            [
+                                html.Span(
+                                    className="color-box",
+                                    style={
+                                        "display": "inline-block",
+                                        "width": "24px",
+                                        "height": "24px",
+                                        "backgroundColor": color,
+                                        "marginRight": "12px",
+                                        "verticalAlign": "middle",
+                                    },
+                                ),
+                                html.Span(
+                                    category,
+                                    style={
+                                        "verticalAlign": "middle",
+                                        "fontWeight": "500",
+                                        "color": "#4a5568",
+                                    },
+                                ),
+                            ],
+                            style={
+                                "display": "inline-block",
+                                "marginRight": "2rem",
+                                "marginBottom": "1rem",
+                            },
+                        )
+                        for category, color in self.category_colors.items()
+                    ],
+                    style={"textAlign": "center"},
+                )
+            ]
         )
 
     def _filter_data_by_timespan(self, timespan_value):
@@ -180,8 +450,21 @@ class FinanceDashboard:
                 color_discrete_map=self.category_colors,
                 hover_data=["name", "amount", "date", "account_id"],
             )
-            chart.update_traces(marker=dict(cornerradius=5), textfont_size=20)
-            chart.update_layout(margin=dict(l=10, r=10, t=20, b=10))
+
+            # Enhanced chart styling
+            chart.update_traces(
+                marker=dict(cornerradius=8, line=dict(width=2, color="white")),
+                textfont_size=16,
+                textfont_color="black",
+                textfont_family="Inter",
+            )
+
+            chart.update_layout(
+                margin=dict(l=0, r=0, t=0, b=0),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Inter, sans-serif", size=14, color="#4a5568"),
+            )
 
             return chart
 
@@ -192,7 +475,7 @@ class FinanceDashboard:
         def update_total_spending(timespan_value):
             dff = self._filter_data_by_timespan(timespan_value)
             total = dff["amount"].sum()
-            return f"Total Spending: ${total:,.2f}"
+            return f"${total:,.2f}"
 
         @callback(
             Output("budget-progress-section", "children"),

@@ -217,7 +217,6 @@ def create_budget_section(purchases_df, budgets):
                 [
                     dbc.Col(
                         [
-                            html.H2("Envelopes", className="text-center mb-4"),
                             *progress_bars,
                         ]
                     )
