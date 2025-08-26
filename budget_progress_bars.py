@@ -59,15 +59,23 @@ def create_budget_progress_bar(
 
     # Update layout for clean appearance
     fig.update_layout(
-        height=80,
-        margin=dict(l=10, r=10, t=10, b=10),
+        height=60,
+        width=None,  # Allow width to be responsive
+        autosize=True,
+        margin=dict(l=10, r=10, t=10, b=10, autoexpand=False),
         xaxis=dict(
             showgrid=False,
             showticklabels=False,
             zeroline=False,
             range=[0, max(budget_amount * 1.1, spent_amount * 1.1)],
+            fixedrange=True,  # Prevent zoom
         ),
-        yaxis=dict(showgrid=False, showticklabels=False, zeroline=False),
+        yaxis=dict(
+            showgrid=False,
+            showticklabels=False,
+            zeroline=False,
+            fixedrange=True,  # Prevent zoom
+        ),
         plot_bgcolor="white",
         paper_bgcolor="white",
         barmode="overlay",
@@ -134,8 +142,12 @@ def create_budget_progress_bar(
                 ),
                 dcc.Graph(
                     figure=fig,
-                    config={"displayModeBar": False},
-                    style={"height": "60px"},
+                    config={
+                        "displayModeBar": False,
+                        "staticPlot": True,
+                        "responsive": True,
+                    },
+                    style={"height": "60px", "width": "100%"},
                 ),
             ],
             className="p-3",
@@ -184,7 +196,7 @@ def create_budget_section(purchases_df, budgets):
         budget_amount = budgets.get(category, 0)
 
         # Get color
-        color = category_colors.get(category, "lightblue")
+        color = category_colors.get(category, "darkgray")
 
         icon_url = None
         if (

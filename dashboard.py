@@ -79,7 +79,7 @@ class FinanceDashboard:
                                 for name in self.month_names
                             ]
                             + [{"label": "Last 30 Days", "value": "Last 30 Days"}],
-                            value="Last 30 Days",
+                            value=self.max_month,
                             id="timespan-selection",
                             className="mb-4",
                         ),
@@ -178,7 +178,7 @@ class FinanceDashboard:
                 values="amount",
                 color="personal_finance_category.primary",
                 color_discrete_map=self.category_colors,
-                hover_data=["name", "amount", "date"],
+                hover_data=["name", "amount", "date", "account_id"],
             )
             chart.update_traces(marker=dict(cornerradius=5), textfont_size=20)
             chart.update_layout(margin=dict(l=10, r=10, t=20, b=10))
