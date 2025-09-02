@@ -16,10 +16,11 @@ def create_budget_progress_bar(category, spent_amount, budget_amount, color):
     Returns:
         Dash component with the progress bar
     """
-    percentage = (
-        min((spent_amount / budget_amount) * 100, 100) if budget_amount > 0 else 0
+    amount_left = budget_amount - spent_amount
+    percentage_left = (
+        min((amount_left / budget_amount) * 100, 100) if amount_left > 0 else 0
     )
-    is_over_budget = spent_amount > budget_amount
+    is_over_budget = amount_left < 0
 
     # Create the plotly figure for the progress bar
     fig = go.Figure()
@@ -41,7 +42,7 @@ def create_budget_progress_bar(category, spent_amount, budget_amount, color):
     progress_color = "red" if is_over_budget else color
     fig.add_trace(
         go.Bar(
-            x=[spent_amount],
+            x=[amount_left if amount_left > 0 else 0],
             y=[category],
             orientation="h",
             marker=dict(color=progress_color, opacity=0.8),
@@ -49,7 +50,7 @@ def create_budget_progress_bar(category, spent_amount, budget_amount, color):
             hovertemplate=f"<b>{category}</b><br>"
             + f"Spent: ${spent_amount:,.2f}<br>"
             + f"Budget: ${budget_amount:,.2f}<br>"
-            + f"Remaining: ${budget_amount - spent_amount:,.2f}<br>"
+            + f"Remaining: ${amount_left:,.2f}<br>"
             + "<extra></extra>",
             width=0.6,
         )
@@ -80,9 +81,9 @@ def create_budget_progress_bar(category, spent_amount, budget_amount, color):
     )
 
     # Format the text display
-    status_text = "Over Budget!" if is_over_budget else f"{percentage:.1f}% used"
+    status_text = "Over Budget!" if is_over_budget else f"{percentage_left:.1f}% left"
     status_color = (
-        "danger" if is_over_budget else "success" if percentage < 80 else "warning"
+        "danger" if is_over_budget else "success" if percentage_left > 20 else "warning"
     )
 
     category_to_name = {
@@ -110,9 +111,21 @@ def create_budget_progress_bar(category, spent_amount, budget_amount, color):
                                     style={"display": "flex", "alignItems": "center"},
                                 ),
                                 html.B(
-                                    f"${spent_amount:,.2f} / ${budget_amount:,.2f}",
-                                    className="text-muted",
-                                    style={"whiteSpace": "nowrap"},
+                                    [
+                                        html.Span(
+                                            f"${amount_left:,.2f}",
+                                            style={
+                                                "color": "red"
+                                                if amount_left < 0
+                                                else "inherit",
+                                                "whiteSpace": "nowrap",
+                                            },
+                                        ),
+                                        html.Span(
+                                            f" / ${budget_amount:,.2f}",
+                                            style={"whiteSpace": "nowrap"},
+                                        ),
+                                    ]
                                 ),
                             ],
                             width=8,

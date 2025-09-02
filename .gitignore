@@ -14,6 +14,7 @@ statements/
 analysis.ipynb
 
 .env
+env.sh
 
 data
 data/*
