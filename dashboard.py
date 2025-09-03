@@ -219,6 +219,7 @@ class FinanceDashboard:
                     
                     #dropdowns-content.minimized {
                         max-height: 0;
+                        overflow: hidden;
                     }
                     
                     /* Mobile responsiveness */
@@ -326,7 +327,7 @@ class FinanceDashboard:
                                                             },
                                                         ),
                                                         html.Button(
-                                                            "−",  # Unicode minus sign
+                                                            "+",
                                                             id="minimize-button",
                                                             n_clicks=1,
                                                             style={
@@ -415,6 +416,7 @@ class FinanceDashboard:
                                                         ),
                                                     ],
                                                     id="dropdowns-content",
+                                                    className="minimized",
                                                 ),
                                             ],
                                         ),
