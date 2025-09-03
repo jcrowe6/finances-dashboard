@@ -1,6 +1,6 @@
 from flask import Flask
 from dashboard import create_dashboard
-from config import CATEGORY_BUDGETS, CATEGORY_COLOR, SECRET_KEY
+from config import SECRET_KEY
 from auth import setup_auth
 
 
@@ -13,7 +13,7 @@ def create_app():
     setup_auth(server)
 
     # Create and configure dashboard
-    create_dashboard(server, CATEGORY_BUDGETS, CATEGORY_COLOR)
+    create_dashboard(server)
 
     return server
 

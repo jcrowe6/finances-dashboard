@@ -4,14 +4,21 @@ import pandas as pd
 import dash_bootstrap_components as dbc
 from datafetchers import fetch_transaction_df_all, fetch_csv_last_modified
 from budget_progress_bars import create_budget_section
+from config import (
+    INDIVIDUAL_BUDGETS,
+    CATEGORY_BUDGETS,
+    CATEGORY_COLOR,
+    NON_EXTRA_CATEGORIES,
+)
 import numpy as np
 
 
 class FinanceDashboard:
-    def __init__(self, server, category_budgets, category_colors):
+    def __init__(self, server):
         self.server = server
-        self.category_budgets = category_budgets
-        self.category_colors = category_colors
+        self.category_budgets = CATEGORY_BUDGETS
+        self.individual_budgets = INDIVIDUAL_BUDGETS
+        self.category_colors = CATEGORY_COLOR
 
         # Load and process data
         self.last_modified = 0
@@ -329,7 +336,6 @@ class FinanceDashboard:
                                                         html.Button(
                                                             "+",
                                                             id="minimize-button",
-                                                            n_clicks=1,
                                                             style={
                                                                 "float": "right",
                                                                 "border": "none",
@@ -345,6 +351,8 @@ class FinanceDashboard:
                                                         "marginBottom": "1rem",
                                                         "padding": "0.5rem 0",
                                                     },
+                                                    id="filters-header",
+                                                    n_clicks=1,
                                                 ),
                                                 html.Div(
                                                     [
@@ -513,10 +521,11 @@ class FinanceDashboard:
         else:
             time_filter = self.purchases_df.Month_Name == timespan_value
         dff = self.purchases_df[time_filter]
-        if source_selection == "Jay":
-            source_filter = dff["account_id"].str.contains("Jay")
-        elif source_selection == "Cara":
-            source_filter = dff["account_id"].str.contains("Cara")
+        # If not both (looking at individual) filter out non-extra/essential categories
+        if source_selection != "Both":
+            source_filter = dff["account_id"].str.contains(source_selection) & ~dff[
+                "personal_finance_category.primary"
+            ].isin(NON_EXTRA_CATEGORIES)
         else:
             source_filter = np.array([True] * len(dff))
         dff = dff[source_filter]
@@ -537,7 +546,7 @@ class FinanceDashboard:
             if len(dff) == 0:
                 return {}, html.Div("No data available for the selected filters.")
             treemap = update_treemap(dff)
-            budget_section = update_budget_progress(dff)
+            budget_section = update_budget_progress(dff, source_selection)
             return treemap, budget_section
 
         def update_treemap(dff):
@@ -567,15 +576,18 @@ class FinanceDashboard:
 
             return chart
 
-        def update_budget_progress(dff):
-            return create_budget_section(dff, self.category_budgets)
+        def update_budget_progress(dff, source_selection):
+            if source_selection == "Both":
+                return create_budget_section(dff, self.category_budgets)
+            else:
+                return create_budget_section(dff, self.individual_budgets)
 
         @callback(
             [
                 Output("dropdowns-content", "className"),
                 Output("minimize-button", "children"),
             ],
-            Input("minimize-button", "n_clicks"),
+            Input("filters-header", "n_clicks"),
             prevent_initial_call=True,
         )
         def toggle_dropdown_visibility(n_clicks):
@@ -584,7 +596,7 @@ class FinanceDashboard:
             return "", "−"  # Unicode minus sign
 
 
-def create_dashboard(server, category_budgets, category_colors):
+def create_dashboard(server):
     """Factory function to create and return dashboard instance"""
-    dashboard = FinanceDashboard(server, category_budgets, category_colors)
+    dashboard = FinanceDashboard(server)
     return dashboard.app

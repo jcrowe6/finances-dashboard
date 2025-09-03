@@ -1,6 +1,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
+from config import NON_EXTRA_CATEGORIES
 
 
 def create_budget_progress_bar(category, spent_amount, budget_amount, color):
@@ -91,6 +92,7 @@ def create_budget_progress_bar(category, spent_amount, budget_amount, color):
         "FOOD_AND_DRINK": "Restaurants",
         "TRANSPORTATION": "Gas",
         "Total": "Total",
+        "Extras": "Extras",
     }
 
     return dbc.Card(
@@ -178,19 +180,21 @@ def create_budget_section(purchases_df, budgets):
         "GENERAL_MERCHANDISE": "lightblue",
         "FOOD_AND_DRINK": "orange",
         "TRANSPORTATION": "lightcoral",
+        "Extras": "lightgreen",
     }
 
     progress_bars = []
 
-    for category in [
-        "Total",
-        "GENERAL_MERCHANDISE",
-        "FOOD_AND_DRINK",
-        "TRANSPORTATION",
-    ]:
+    for category in budgets.keys():
         # Calculate spent amount for this category
         if category == "Total":
             category_data = purchases_df
+        elif category == "Extras":
+            category_data = purchases_df[
+                ~purchases_df["personal_finance_category.primary"].isin(
+                    NON_EXTRA_CATEGORIES
+                )
+            ]
         else:
             category_data = purchases_df[
                 purchases_df["personal_finance_category.primary"] == category
