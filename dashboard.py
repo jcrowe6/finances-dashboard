@@ -4,6 +4,7 @@ import pandas as pd
 import dash_bootstrap_components as dbc
 from datafetchers import fetch_transaction_df_all, fetch_csv_last_modified
 from budget_progress_bars import create_budget_section
+import numpy as np
 
 
 class FinanceDashboard:
@@ -112,12 +113,6 @@ class FinanceDashboard:
                         margin: 1rem 0;
                         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
                         border: 1px solid rgba(0, 0, 0, 0.05);
-                        transition: transform 0.2s ease, box-shadow 0.2s ease;
-                    }
-                    
-                    .section-card:hover {
-                        transform: translateY(-2px);
-                        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
                     }
                     
                     .section-title {
@@ -145,10 +140,7 @@ class FinanceDashboard:
                         background: white;
                         border-radius: 15px;
                         padding: 1.5rem;
-                        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-                        border: 1px solid rgba(0, 0, 0, 0.05);
-                        margin: 2rem auto;
-                        max-width: 400px;
+                        z-index: 10;
                     }
                     
                     .Select-control {
@@ -217,6 +209,16 @@ class FinanceDashboard:
                     
                     .section-card {
                         animation: slideIn 0.6s ease-out;
+                    }
+                    
+                    /* Dropdown animations */
+                    #dropdowns-content {
+                        max-height: 500px;
+                        transition: max-height 0.3s ease-out;
+                    }
+                    
+                    #dropdowns-content.minimized {
+                        max-height: 0;
                     }
                     
                     /* Mobile responsiveness */
@@ -307,35 +309,117 @@ class FinanceDashboard:
                         # Content section
                         html.Div(
                             [
-                                # Time period selector
+                                # Selectors with minimize button
                                 html.Div(
                                     [
-                                        html.Label(
-                                            "Select Time Period",
-                                            style={
-                                                "fontWeight": "600",
-                                                "marginBottom": "1rem",
-                                                "display": "block",
-                                                "textAlign": "center",
-                                                "color": "#4a5568",
-                                            },
-                                        ),
-                                        dcc.Dropdown(
-                                            options=[
-                                                {"label": name, "value": name}
-                                                for name in self.month_names
-                                            ]
-                                            + [
-                                                {
-                                                    "label": "Last 30 Days",
-                                                    "value": "Last 30 Days",
-                                                }
+                                        html.Div(
+                                            [
+                                                html.Div(
+                                                    [
+                                                        html.H3(
+                                                            "Filters",
+                                                            style={
+                                                                "margin": "0",
+                                                                "display": "inline-block",
+                                                                "color": "#4a5568",
+                                                                "fontWeight": "600",
+                                                            },
+                                                        ),
+                                                        html.Button(
+                                                            "−",  # Unicode minus sign
+                                                            id="minimize-button",
+                                                            n_clicks=1,
+                                                            style={
+                                                                "float": "right",
+                                                                "border": "none",
+                                                                "background": "none",
+                                                                "fontSize": "24px",
+                                                                "color": "#4a5568",
+                                                                "cursor": "pointer",
+                                                                "padding": "0 10px",
+                                                            },
+                                                        ),
+                                                    ],
+                                                    style={
+                                                        "marginBottom": "1rem",
+                                                        "padding": "0.5rem 0",
+                                                    },
+                                                ),
+                                                html.Div(
+                                                    [
+                                                        html.Div(
+                                                            [
+                                                                html.Label(
+                                                                    "Select Time Period",
+                                                                    style={
+                                                                        "fontWeight": "600",
+                                                                        "marginBottom": "1rem",
+                                                                        "textAlign": "center",
+                                                                        "color": "#4a5568",
+                                                                    },
+                                                                ),
+                                                                dcc.Dropdown(
+                                                                    options=[
+                                                                        {
+                                                                            "label": name,
+                                                                            "value": name,
+                                                                        }
+                                                                        for name in self.month_names
+                                                                    ]
+                                                                    + [
+                                                                        {
+                                                                            "label": "Last 30 Days",
+                                                                            "value": "Last 30 Days",
+                                                                        }
+                                                                    ],
+                                                                    value=self.max_month,
+                                                                    id="timespan-selection",
+                                                                ),
+                                                            ],
+                                                            className="dropdown-container",
+                                                        ),
+                                                        html.Div(
+                                                            [
+                                                                html.Label(
+                                                                    "Select Spender",
+                                                                    style={
+                                                                        "fontWeight": "600",
+                                                                        "marginBottom": "1rem",
+                                                                        "textAlign": "center",
+                                                                        "color": "#4a5568",
+                                                                    },
+                                                                ),
+                                                                dcc.Dropdown(
+                                                                    options=[
+                                                                        {
+                                                                            "label": name,
+                                                                            "value": name,
+                                                                        }
+                                                                        for name in [
+                                                                            "Both",
+                                                                            "Jay",
+                                                                            "Cara",
+                                                                        ]
+                                                                    ]
+                                                                    + [
+                                                                        {
+                                                                            "label": "Both",
+                                                                            "value": "Both",
+                                                                        }
+                                                                    ],
+                                                                    value="Both",
+                                                                    id="source-selection",
+                                                                ),
+                                                            ],
+                                                            className="dropdown-container",
+                                                        ),
+                                                    ],
+                                                    id="dropdowns-content",
+                                                ),
                                             ],
-                                            value=self.max_month,
-                                            id="timespan-selection",
                                         ),
                                     ],
-                                    className="dropdown-container",
+                                    className="section-card",
                                 ),
                                 # Budget progress section
                                 html.Div(
@@ -418,25 +502,43 @@ class FinanceDashboard:
             ]
         )
 
-    def _filter_data_by_timespan(self, timespan_value):
+    def _filter_data_by_selectors(self, timespan_value, source_selection):
         """Filter purchase data based on selected timespan"""
         if timespan_value == "Last 30 Days":
-            return self.purchases_df[
-                self.purchases_df["date"]
-                >= (pd.Timestamp.now() - pd.DateOffset(days=30))
-            ]
+            time_filter = self.purchases_df["date"] >= (
+                pd.Timestamp.now() - pd.DateOffset(days=30)
+            )
         else:
-            return self.purchases_df[self.purchases_df.Month_Name == timespan_value]
+            time_filter = self.purchases_df.Month_Name == timespan_value
+        dff = self.purchases_df[time_filter]
+        if source_selection == "Jay":
+            source_filter = dff["account_id"].str.contains("Jay")
+        elif source_selection == "Cara":
+            source_filter = dff["account_id"].str.contains("Cara")
+        else:
+            source_filter = np.array([True] * len(dff))
+        dff = dff[source_filter]
+        return dff
 
     def _register_callbacks(self):
         """Register all dashboard callbacks"""
 
         @callback(
-            Output("treemap-content", "figure"), Input("timespan-selection", "value")
+            [
+                Output("treemap-content", "figure"),
+                Output("budget-progress-section", "children"),
+            ],
+            [Input("timespan-selection", "value"), Input("source-selection", "value")],
         )
-        def update_treemap(timespan_value):
-            dff = self._filter_data_by_timespan(timespan_value)
+        def update_dashboard(timespan_value, source_selection):
+            dff = self._filter_data_by_selectors(timespan_value, source_selection)
+            if len(dff) == 0:
+                return {}, html.Div("No data available for the selected filters.")
+            treemap = update_treemap(dff)
+            budget_section = update_budget_progress(dff)
+            return treemap, budget_section
 
+        def update_treemap(dff):
             chart = px.treemap(
                 dff,
                 path=["personal_finance_category.primary", "merchant_name"],
@@ -463,22 +565,21 @@ class FinanceDashboard:
 
             return chart
 
-        @callback(
-            Output("total-spending-value", "children"),
-            Input("timespan-selection", "value"),
-        )
-        def update_total_spending(timespan_value):
-            dff = self._filter_data_by_timespan(timespan_value)
-            total = dff["amount"].sum()
-            return f"${total:,.2f}"
+        def update_budget_progress(dff):
+            return create_budget_section(dff, self.category_budgets)
 
         @callback(
-            Output("budget-progress-section", "children"),
-            Input("timespan-selection", "value"),
+            [
+                Output("dropdowns-content", "className"),
+                Output("minimize-button", "children"),
+            ],
+            Input("minimize-button", "n_clicks"),
+            prevent_initial_call=True,
         )
-        def update_budget_progress(timespan_value):
-            dff = self._filter_data_by_timespan(timespan_value)
-            return create_budget_section(dff, self.category_budgets)
+        def toggle_dropdown_visibility(n_clicks):
+            if n_clicks % 2 == 1:
+                return "minimized", "+"
+            return "", "−"  # Unicode minus sign
 
 
 def create_dashboard(server, category_budgets, category_colors):
