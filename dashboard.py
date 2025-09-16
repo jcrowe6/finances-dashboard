@@ -228,6 +228,11 @@ class FinanceDashboard:
                         max-height: 0;
                         overflow: hidden;
                     }
+
+                    .last-updated {
+                        font-family: 'Inter', sans-serif;
+                        font-weight: 400;
+                    }
                     
                     /* Mobile responsiveness */
                     @media (max-width: 768px) {
@@ -253,6 +258,13 @@ class FinanceDashboard:
                             display: block;
                             width: fit-content;
                             margin: 1rem auto 0;
+                        }
+
+                        .last-updated {
+                            position: static !important;
+                            display: block;
+                            text-align: center;
+                            margin-bottom: 1rem;
                         }
                     }
                 </style>
@@ -287,6 +299,8 @@ class FinanceDashboard:
             ]
             self.max_month = self.month_names[-1]
             self.last_modified = current_modified
+            last_updated_dt = pd.to_datetime(current_modified, unit="s")
+            self.last_updated = last_updated_dt.strftime("%b %-d, %Y")
         else:
             print("Data is up-to-date.")
 
@@ -302,6 +316,19 @@ class FinanceDashboard:
                         # Header section
                         html.Div(
                             [
+                                html.Span(
+                                    f"Last updated: {self.last_updated}",
+                                    className="last-updated",
+                                    style={
+                                        "position": "absolute",
+                                        "left": "2rem",
+                                        "top": "1rem",
+                                        "color": "white",
+                                        "fontSize": "0.9rem",
+                                        "opacity": "0.8",
+                                        "zIndex": "1",
+                                    },
+                                ),
                                 html.A(
                                     "Logout",
                                     href="/logout",
