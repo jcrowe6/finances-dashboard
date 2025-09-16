@@ -224,9 +224,16 @@ class FinanceDashboard:
                         transition: max-height 0.3s ease-out;
                     }
                     
-                    #dropdowns-content.minimized {
+                    #dropdowns-content.minimized,
+                    #transactions-content.minimized {
                         max-height: 0;
                         overflow: hidden;
+                    }
+
+                    #dropdowns-content,
+                    #transactions-content {
+                        max-height: 2000px;
+                        transition: max-height 0.3s ease-out;
                     }
 
                     .last-updated {
@@ -489,6 +496,48 @@ class FinanceDashboard:
                                     ],
                                     className="color-legend",
                                 ),
+                                # Recent Transactions section
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            [
+                                                html.H3(
+                                                    "Recent Transactions",
+                                                    style={
+                                                        "margin": "0",
+                                                        "display": "inline-block",
+                                                        "color": "#4a5568",
+                                                        "fontWeight": "600",
+                                                    },
+                                                ),
+                                                html.Button(
+                                                    "+",
+                                                    id="transactions-minimize-button",
+                                                    style={
+                                                        "float": "right",
+                                                        "border": "none",
+                                                        "background": "none",
+                                                        "fontSize": "24px",
+                                                        "color": "#4a5568",
+                                                        "cursor": "pointer",
+                                                        "padding": "0 10px",
+                                                    },
+                                                ),
+                                            ],
+                                            style={
+                                                "marginBottom": "1rem",
+                                                "padding": "0.5rem 0",
+                                            },
+                                            id="transactions-header",
+                                            n_clicks=1,
+                                        ),
+                                        html.Div(
+                                            id="transactions-content",
+                                            className="minimized",
+                                        ),
+                                    ],
+                                    className="section-card",
+                                ),
                             ],
                             className="content-section",
                         ),
@@ -621,6 +670,118 @@ class FinanceDashboard:
             if n_clicks % 2 == 1:
                 return "minimized", "+"
             return "", "−"  # Unicode minus sign
+
+        @callback(
+            [
+                Output("transactions-content", "className"),
+                Output("transactions-minimize-button", "children"),
+                Output("transactions-content", "children"),
+            ],
+            [
+                Input("transactions-header", "n_clicks"),
+                Input("timespan-selection", "value"),
+                Input("source-selection", "value"),
+            ],
+            prevent_initial_call=True,
+        )
+        def update_transactions_section(n_clicks, timespan_value, source_selection):
+            dff = self._filter_data_by_selectors(timespan_value, source_selection)
+
+            # Sort by date descending to show most recent first
+            dff = dff.sort_values("date", ascending=False)
+
+            # Format the transactions table
+            transactions_table = html.Table(
+                [
+                    # Header
+                    html.Thead(
+                        html.Tr(
+                            [
+                                html.Th(
+                                    col,
+                                    style={
+                                        "textAlign": "left",
+                                        "padding": "12px",
+                                        "borderBottom": "2px solid #e2e8f0",
+                                        "color": "#4a5568",
+                                        "fontWeight": "600",
+                                    },
+                                )
+                                for col in [
+                                    "Date",
+                                    "Merchant",
+                                    "Amount",
+                                    "Category",
+                                    "Account",
+                                ]
+                            ]
+                        )
+                    ),
+                    # Body
+                    html.Tbody(
+                        [
+                            html.Tr(
+                                [
+                                    html.Td(
+                                        row["date"].strftime("%Y-%m-%d"),
+                                        style={
+                                            "padding": "12px",
+                                            "borderBottom": "1px solid #e2e8f0",
+                                        },
+                                    ),
+                                    html.Td(
+                                        row["merchant_name"],
+                                        style={
+                                            "padding": "12px",
+                                            "borderBottom": "1px solid #e2e8f0",
+                                        },
+                                    ),
+                                    html.Td(
+                                        f"${row['amount']:.2f}",
+                                        style={
+                                            "padding": "12px",
+                                            "borderBottom": "1px solid #e2e8f0",
+                                            "textAlign": "right",
+                                        },
+                                    ),
+                                    html.Td(
+                                        row["personal_finance_category.primary"],
+                                        style={
+                                            "padding": "12px",
+                                            "borderBottom": "1px solid #e2e8f0",
+                                        },
+                                    ),
+                                    html.Td(
+                                        row["account_id"],
+                                        style={
+                                            "padding": "12px",
+                                            "borderBottom": "1px solid #e2e8f0",
+                                        },
+                                    ),
+                                ],
+                                style={"backgroundColor": "white"},
+                            )
+                            for _, row in dff.head(
+                                10
+                            ).iterrows()  # Show only the 10 most recent transactions
+                        ]
+                    ),
+                ],
+                style={
+                    "width": "100%",
+                    "borderCollapse": "collapse",
+                    "backgroundColor": "white",
+                    "borderRadius": "10px",
+                    "overflow": "hidden",
+                    "boxShadow": "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                },
+            )
+
+            is_minimized = n_clicks % 2 == 1 if n_clicks is not None else True
+            className = "minimized" if is_minimized else ""
+            button_text = "+" if is_minimized else "−"
+
+            return className, button_text, transactions_table
 
 
 def create_dashboard(server):
