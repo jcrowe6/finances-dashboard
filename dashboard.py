@@ -225,13 +225,13 @@ class FinanceDashboard:
                     }
                     
                     #dropdowns-content.minimized,
-                    #transactions-content.minimized {
+                    #transactions-minimize-section.minimized {
                         max-height: 0;
                         overflow: hidden;
                     }
 
                     #dropdowns-content,
-                    #transactions-content {
+                    #transactions-minimize-section {
                         max-height: 2000px;
                         transition: max-height 0.3s ease-out;
                     }
@@ -484,18 +484,6 @@ class FinanceDashboard:
                                     ],
                                     className="section-card",
                                 ),
-                                # Color legend
-                                html.Div(
-                                    [
-                                        html.H3(
-                                            "Category Legend",
-                                            className="section-title",
-                                            style={"fontSize": "1.5rem"},
-                                        ),
-                                        self._create_color_legend_content(),
-                                    ],
-                                    className="color-legend",
-                                ),
                                 # Recent Transactions section
                                 html.Div(
                                     [
@@ -532,7 +520,26 @@ class FinanceDashboard:
                                             n_clicks=1,
                                         ),
                                         html.Div(
-                                            id="transactions-content",
+                                            [
+                                                html.Div(
+                                                    id="transactions-content",
+                                                ),
+                                                html.Div(
+                                                    [
+                                                        dbc.Pagination(
+                                                            max_value=10,  # how to set dynamically?
+                                                            fully_expanded=False,
+                                                            style={
+                                                                "textAlign": "center",
+                                                                "marginTop": "1rem",
+                                                                "fontSize": "14px",
+                                                            },
+                                                        )
+                                                    ],
+                                                    style={"marginTop": "1rem"},
+                                                ),
+                                            ],
+                                            id="transactions-minimize-section",
                                             className="minimized",
                                         ),
                                     ],
@@ -543,47 +550,6 @@ class FinanceDashboard:
                         ),
                     ],
                     className="main-container",
-                )
-            ]
-        )
-
-    def _create_color_legend_content(self):
-        """Create enhanced color legend content"""
-        return html.Div(
-            [
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.Span(
-                                    className="color-box",
-                                    style={
-                                        "display": "inline-block",
-                                        "width": "24px",
-                                        "height": "24px",
-                                        "backgroundColor": color,
-                                        "marginRight": "12px",
-                                        "verticalAlign": "middle",
-                                    },
-                                ),
-                                html.Span(
-                                    category,
-                                    style={
-                                        "verticalAlign": "middle",
-                                        "fontWeight": "500",
-                                        "color": "#4a5568",
-                                    },
-                                ),
-                            ],
-                            style={
-                                "display": "inline-block",
-                                "marginRight": "2rem",
-                                "marginBottom": "1rem",
-                            },
-                        )
-                        for category, color in self.category_colors.items()
-                    ],
-                    style={"textAlign": "center"},
                 )
             ]
         )
@@ -673,7 +639,7 @@ class FinanceDashboard:
 
         @callback(
             [
-                Output("transactions-content", "className"),
+                Output("transactions-minimize-section", "className"),
                 Output("transactions-minimize-button", "children"),
                 Output("transactions-content", "children"),
             ],
@@ -691,89 +657,95 @@ class FinanceDashboard:
             dff = dff.sort_values("date", ascending=False)
 
             # Format the transactions table
-            transactions_table = html.Table(
-                [
-                    # Header
-                    html.Thead(
-                        html.Tr(
-                            [
-                                html.Th(
-                                    col,
-                                    style={
-                                        "textAlign": "left",
-                                        "padding": "12px",
-                                        "borderBottom": "2px solid #e2e8f0",
-                                        "color": "#4a5568",
-                                        "fontWeight": "600",
-                                    },
-                                )
-                                for col in [
-                                    "Date",
-                                    "Merchant",
-                                    "Amount",
-                                    "Category",
-                                    "Account",
-                                ]
-                            ]
-                        )
-                    ),
-                    # Body
-                    html.Tbody(
-                        [
+            transactions_table = html.Div(
+                html.Table(
+                    [
+                        # Header
+                        html.Thead(
                             html.Tr(
                                 [
-                                    html.Td(
-                                        row["date"].strftime("%Y-%m-%d"),
+                                    html.Th(
+                                        col,
                                         style={
+                                            "textAlign": "left",
                                             "padding": "12px",
-                                            "borderBottom": "1px solid #e2e8f0",
+                                            "borderBottom": "2px solid #e2e8f0",
+                                            "color": "#4a5568",
+                                            "fontWeight": "600",
                                         },
-                                    ),
-                                    html.Td(
-                                        row["merchant_name"],
-                                        style={
-                                            "padding": "12px",
-                                            "borderBottom": "1px solid #e2e8f0",
-                                        },
-                                    ),
-                                    html.Td(
-                                        f"${row['amount']:.2f}",
-                                        style={
-                                            "padding": "12px",
-                                            "borderBottom": "1px solid #e2e8f0",
-                                            "textAlign": "right",
-                                        },
-                                    ),
-                                    html.Td(
-                                        row["personal_finance_category.primary"],
-                                        style={
-                                            "padding": "12px",
-                                            "borderBottom": "1px solid #e2e8f0",
-                                        },
-                                    ),
-                                    html.Td(
-                                        row["account_id"],
-                                        style={
-                                            "padding": "12px",
-                                            "borderBottom": "1px solid #e2e8f0",
-                                        },
-                                    ),
-                                ],
-                                style={"backgroundColor": "white"},
+                                    )
+                                    for col in [
+                                        "Date",
+                                        "Merchant",
+                                        "Amount",
+                                        "Category",
+                                        "Account",
+                                    ]
+                                ]
                             )
-                            for _, row in dff.head(
-                                10
-                            ).iterrows()  # Show only the 10 most recent transactions
-                        ]
-                    ),
-                ],
+                        ),
+                        # Body
+                        html.Tbody(
+                            [
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            row["date"].strftime("%Y-%m-%d"),
+                                            style={
+                                                "padding": "12px",
+                                                "borderBottom": "1px solid #e2e8f0",
+                                            },
+                                        ),
+                                        html.Td(
+                                            row["merchant_name"],
+                                            style={
+                                                "padding": "12px",
+                                                "borderBottom": "1px solid #e2e8f0",
+                                            },
+                                        ),
+                                        html.Td(
+                                            f"${row['amount']:.2f}",
+                                            style={
+                                                "padding": "12px",
+                                                "borderBottom": "1px solid #e2e8f0",
+                                                "textAlign": "right",
+                                            },
+                                        ),
+                                        html.Td(
+                                            row["personal_finance_category.primary"],
+                                            style={
+                                                "padding": "12px",
+                                                "borderBottom": "1px solid #e2e8f0",
+                                            },
+                                        ),
+                                        html.Td(
+                                            row["account_id"],
+                                            style={
+                                                "padding": "12px",
+                                                "borderBottom": "1px solid #e2e8f0",
+                                            },
+                                        ),
+                                    ],
+                                    style={"backgroundColor": "white"},
+                                )
+                                for _, row in dff.head(
+                                    10
+                                ).iterrows()  # Show only the 10 most recent transactions
+                            ]
+                        ),
+                    ],
+                    style={
+                        "width": "100%",
+                        "borderCollapse": "collapse",
+                        "backgroundColor": "white",
+                        "boxShadow": "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                    },
+                ),
                 style={
-                    "width": "100%",
-                    "borderCollapse": "collapse",
-                    "backgroundColor": "white",
                     "borderRadius": "10px",
-                    "overflow": "hidden",
+                    "overflow": "auto",
                     "boxShadow": "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                    "backgroundColor": "white",
                 },
             )
 
