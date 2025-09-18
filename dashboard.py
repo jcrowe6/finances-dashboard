@@ -296,12 +296,6 @@ class FinanceDashboard:
                                                                             "Jay",
                                                                             "Cara",
                                                                         ]
-                                                                    ]
-                                                                    + [
-                                                                        {
-                                                                            "label": "Both",
-                                                                            "value": "Both",
-                                                                        }
                                                                     ],
                                                                     value="Both",
                                                                     id="source-selection",
