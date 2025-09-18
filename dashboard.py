@@ -9,6 +9,7 @@ from config import (
     CATEGORY_BUDGETS,
     CATEGORY_COLOR,
     NON_EXTRA_CATEGORIES,
+    TRANSACTIONS_TABLE_PAGE_SIZE,
 )
 import numpy as np
 
@@ -20,9 +21,19 @@ class FinanceDashboard:
         self.individual_budgets = INDIVIDUAL_BUDGETS
         self.category_colors = CATEGORY_COLOR
 
-        # Load and process data
+        # Not necessary but just as a reminder these values get set on data fetch
+        self.df = None
+        self.purchases_df = None
+        self.month_names = None
+        self.max_month = None
+        self.last_updated = None
+        # This one is necessary as it gets checked against the file mod time
         self.last_modified = 0
+        # Set them
         self.get_and_set_data_if_new()
+
+        # This will hold the filtered dataframe. Also not necessary to define right now
+        self.dff = None
 
         # Initialize Dash app with enhanced styling
         self.app = Dash(
@@ -522,7 +533,7 @@ class FinanceDashboard:
                                         html.Div(
                                             [
                                                 html.Div(
-                                                    id="transactions-content",
+                                                    id="transactions-table",
                                                 ),
                                                 html.Div(
                                                     [
@@ -534,6 +545,7 @@ class FinanceDashboard:
                                                                 "marginTop": "1rem",
                                                                 "fontSize": "14px",
                                                             },
+                                                            id="transactions-pagination",
                                                         )
                                                     ],
                                                     style={"marginTop": "1rem"},
@@ -571,7 +583,8 @@ class FinanceDashboard:
         else:
             source_filter = np.array([True] * len(dff))
         dff = dff[source_filter]
-        return dff
+        # Default to sorted so we don't have to recompute
+        self.dff = dff.sort_values(by="date", ascending=False)
 
     def _register_callbacks(self):
         """Register all dashboard callbacks"""
@@ -580,20 +593,25 @@ class FinanceDashboard:
             [
                 Output("treemap-content", "figure"),
                 Output("budget-progress-section", "children"),
+                Output("transactions-table", "children"),
+                Output("transactions-pagination", "active_page"),
+                Output("transactions-pagination", "max_value"),
             ],
             [Input("timespan-selection", "value"), Input("source-selection", "value")],
         )
-        def update_dashboard(timespan_value, source_selection):
-            dff = self._filter_data_by_selectors(timespan_value, source_selection)
-            if len(dff) == 0:
+        def update_whole_dashboard_on_filter_change(timespan_value, source_selection):
+            self._filter_data_by_selectors(timespan_value, source_selection)
+            if len(self.dff) == 0:
                 return {}, html.Div("No data available for the selected filters.")
-            treemap = update_treemap(dff)
-            budget_section = update_budget_progress(dff, source_selection)
-            return treemap, budget_section
+            treemap = update_treemap()
+            budget_section = update_budget_progress(source_selection)
+            transactions_table = update_transactions_table(1)
+            max_pages = len(self.dff) // TRANSACTIONS_TABLE_PAGE_SIZE + 1
+            return treemap, budget_section, transactions_table, 1, max_pages
 
-        def update_treemap(dff):
+        def update_treemap():
             chart = px.treemap(
-                dff,
+                self.dff,
                 path=["personal_finance_category.primary", "merchant_name"],
                 values="amount",
                 color="personal_finance_category.primary",
@@ -618,45 +636,21 @@ class FinanceDashboard:
 
             return chart
 
-        def update_budget_progress(dff, source_selection):
+        def update_budget_progress(source_selection):
             if source_selection == "Both":
-                return create_budget_section(dff, self.category_budgets)
+                return create_budget_section(self.dff, self.category_budgets)
             else:
-                return create_budget_section(dff, self.individual_budgets)
+                return create_budget_section(self.dff, self.individual_budgets)
 
         @callback(
-            [
-                Output("dropdowns-content", "className"),
-                Output("minimize-button", "children"),
-            ],
-            Input("filters-header", "n_clicks"),
+            Output("transactions-table", "children", allow_duplicate=True),
+            Input("transactions-pagination", "active_page"),
             prevent_initial_call=True,
         )
-        def toggle_dropdown_visibility(n_clicks):
-            if n_clicks % 2 == 1:
-                return "minimized", "+"
-            return "", "−"  # Unicode minus sign
-
-        @callback(
-            [
-                Output("transactions-minimize-section", "className"),
-                Output("transactions-minimize-button", "children"),
-                Output("transactions-content", "children"),
-            ],
-            [
-                Input("transactions-header", "n_clicks"),
-                Input("timespan-selection", "value"),
-                Input("source-selection", "value"),
-            ],
-            prevent_initial_call=True,
-        )
-        def update_transactions_section(n_clicks, timespan_value, source_selection):
-            dff = self._filter_data_by_selectors(timespan_value, source_selection)
-
-            # Sort by date descending to show most recent first
-            dff = dff.sort_values("date", ascending=False)
-
-            # Format the transactions table
+        def update_transactions_table(page):
+            start_idx = (page - 1) * TRANSACTIONS_TABLE_PAGE_SIZE
+            end_idx = start_idx + TRANSACTIONS_TABLE_PAGE_SIZE
+            rows = self.dff.iloc[start_idx:end_idx]
             transactions_table = html.Div(
                 html.Table(
                     [
@@ -728,9 +722,7 @@ class FinanceDashboard:
                                     ],
                                     style={"backgroundColor": "white"},
                                 )
-                                for _, row in dff.head(
-                                    10
-                                ).iterrows()  # Show only the 10 most recent transactions
+                                for _, row in rows.iterrows()  # Show only the 10 most recent transactions
                             ]
                         ),
                     ],
@@ -748,12 +740,31 @@ class FinanceDashboard:
                     "backgroundColor": "white",
                 },
             )
+            return transactions_table
 
-            is_minimized = n_clicks % 2 == 1 if n_clicks is not None else True
-            className = "minimized" if is_minimized else ""
-            button_text = "+" if is_minimized else "−"
+        @callback(
+            [
+                Output("dropdowns-content", "className"),
+                Output("minimize-button", "children"),
+            ],
+            Input("filters-header", "n_clicks"),
+            prevent_initial_call=True,
+        )
+        def toggle_dropdown_visibility(n_clicks):
+            if n_clicks % 2 == 1:
+                return "minimized", "+"
+            return "", "−"  # Unicode minus sign
 
-            return className, button_text, transactions_table
+        @callback(
+            [
+                Output("transactions-minimize-section", "className"),
+                Output("transactions-minimize-button", "children"),
+            ],
+            Input("transactions-header", "n_clicks"),
+            prevent_initial_call=True,
+        )
+        def toggle_transactions_visibility(n_clicks):
+            return toggle_dropdown_visibility(n_clicks)
 
 
 def create_dashboard(server):
