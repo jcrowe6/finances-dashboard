@@ -4,9 +4,12 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 DASHBOARD_PASSWORD = os.environ.get("DASHBOARD_PASSWORD")
 DATA_DIR = os.environ.get("DATA_DIR")
 
+MAIN_DATA_LOC = DATA_DIR + "/transactions.csv"
+OVERRIDES_LOC = DATA_DIR + "/overrides.csv"
+
 CATEGORY_BUDGETS = {
     "Total": 2500,
-    "GENERAL_MERCHANDISE": 600,
+    "Groceries": 600,
     "FOOD_AND_DRINK": 100,
     "TRANSPORTATION": 200,
 }
@@ -27,6 +30,8 @@ CATEGORY_COLOR = {
     "BANK_FEES": "lightgray",
     "GOVERNMENT_AND_NON_PROFIT": "lightcyan",
     "HOME_IMPROVEMENT": "lightsalmon",
+    "Extras": "lightgreen",
+    "Groceries": "lightblue",
 }
 
 NON_EXTRA_CATEGORIES = [
@@ -36,3 +41,5 @@ NON_EXTRA_CATEGORIES = [
     "RENT_AND_UTILITIES",
     "MEDICAL",
 ]
+
+TRANSACTIONS_TABLE_PAGE_SIZE = 10
