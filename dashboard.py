@@ -7,12 +7,13 @@ from dash import (
     Input,
     State,
     ALL,
+    callback_context,
 )
 from dash.exceptions import PreventUpdate
 import plotly.express as px
 import pandas as pd
 import dash_bootstrap_components as dbc
-from overrides_helpers import upsert_override
+from overrides_helpers import upsert_override, delete_override
 from datafetchers import fetch_transaction_df_all, fetch_csv_last_modified
 from budget_progress_bars import create_budget_section
 from config import (
@@ -94,9 +95,82 @@ class FinanceDashboard:
         # Refresh data every load
         self.get_and_set_data_if_new()
 
+        # Get all unique categories for the dropdown
+        all_categories = list(self.category_colors.keys())
+
         return html.Div(
             [
                 html.Div(id="dummy-output"),  # Hidden div for the edit callback
+                # Edit Transaction Modal
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader("Edit Transaction"),
+                        dbc.ModalBody(
+                            [
+                                dbc.Form(
+                                    [
+                                        dbc.Row(
+                                            [
+                                                dbc.Label("Amount", width=2),
+                                                dbc.Col(
+                                                    dbc.Input(
+                                                        type="number",
+                                                        step=0.01,
+                                                        id="edit-amount-input",
+                                                        style={"width": "100%"},
+                                                    ),
+                                                    width=10,
+                                                ),
+                                            ],
+                                            className="mb-3",
+                                        ),
+                                        dbc.Row(
+                                            [
+                                                dbc.Label("Category", width=2),
+                                                dbc.Col(
+                                                    dcc.Dropdown(
+                                                        id="edit-category-dropdown",
+                                                        options=[
+                                                            {"label": cat, "value": cat}
+                                                            for cat in all_categories
+                                                        ],
+                                                        style={"width": "100%"},
+                                                    ),
+                                                    width=10,
+                                                ),
+                                            ]
+                                        ),
+                                        # Hidden input to store transaction_id
+                                        dbc.Input(
+                                            id="edit-transaction-id", type="hidden"
+                                        ),
+                                    ]
+                                )
+                            ]
+                        ),
+                        dbc.ModalFooter(
+                            [
+                                dbc.Button(
+                                    "Reset to Original",
+                                    id="edit-modal-reset",
+                                    className="me-auto",
+                                    color="danger",
+                                ),
+                                dbc.Button(
+                                    "Cancel",
+                                    id="edit-modal-close",
+                                    className="me-2",
+                                    color="secondary",
+                                ),
+                                dbc.Button(
+                                    "Save", id="edit-modal-save", color="primary"
+                                ),
+                            ]
+                        ),
+                    ],
+                    id="edit-modal",
+                    size="lg",
+                ),
                 html.Div(
                     [
                         # Header section
@@ -563,26 +637,102 @@ class FinanceDashboard:
             return toggle_dropdown_visibility(n_clicks)
 
         @callback(
-            Output(
-                "dummy-output", "children"
-            ),  # Used to trigger full dashboard component refresh
-            [Input({"type": "edit-transaction", "index": ALL}, "n_clicks")],
-            [State({"type": "edit-transaction", "index": ALL}, "id")],
+            [
+                Output("edit-modal", "is_open"),
+                Output("edit-transaction-id", "value"),
+                Output("edit-amount-input", "value"),
+                Output("edit-category-dropdown", "value"),
+            ],
+            [
+                Input({"type": "edit-transaction", "index": ALL}, "n_clicks"),
+                Input("edit-modal-close", "n_clicks"),
+                Input("edit-modal-save", "n_clicks"),
+                Input("edit-modal-reset", "n_clicks"),
+            ],
+            [
+                State({"type": "edit-transaction", "index": ALL}, "id"),
+                State("edit-modal", "is_open"),
+            ],
         )
-        def handle_edit_click(n_clicks_list, button_ids):
-            # Find which button was clicked
-            if not n_clicks_list or not any(n_clicks_list):
+        def toggle_edit_modal(
+            edit_clicks, close_clicks, save_clicks, reset_clicks, button_ids, is_open
+        ):
+            ctx = callback_context
+            if not ctx.triggered:
                 raise PreventUpdate
 
-            # Get the transaction ID of the clicked button
-            clicked_idx = next(i for i, n in enumerate(n_clicks_list) if n)
-            transaction_id = button_ids[clicked_idx]["index"]
+            trigger_id = ctx.triggered[0]["prop_id"]
 
-            # For now, just test the upsert function with a hardcoded test
-            # In the future, this would open a modal for editing
-            upsert_override(transaction_id=transaction_id, new_amount=99.99)
-            self.get_and_set_data_if_new()  # Refresh data after edit
-            return ""
+            # Handle modal close/save/reset buttons
+            if (
+                "edit-modal-close" in trigger_id
+                or "edit-modal-save" in trigger_id
+                or "edit-modal-reset" in trigger_id
+            ):
+                return False, "", None, None
+
+            # Handle initial load case - all edit_clicks will be None
+            if all(click is None for click in edit_clicks):
+                raise PreventUpdate
+
+            # Handle edit button clicks
+            if ".n_clicks" in trigger_id:
+                button_index = eval(trigger_id.split(".")[0])["index"]
+                transaction_id = button_index
+
+                # Get current transaction data
+                row = self.dff[self.dff["transaction_id"] == transaction_id].iloc[0]
+                current_amount = row["amount"]
+                current_category = row["personal_finance_category.primary"]
+
+                return True, transaction_id, current_amount, current_category
+
+            raise PreventUpdate
+
+        @callback(
+            Output("dummy-output", "children"),
+            [
+                Input("edit-modal-save", "n_clicks"),
+                Input("edit-modal-reset", "n_clicks"),
+            ],
+            [
+                State("edit-transaction-id", "value"),
+                State("edit-amount-input", "value"),
+                State("edit-category-dropdown", "value"),
+            ],
+        )
+        def handle_edit_save_or_reset(
+            save_n_clicks, reset_n_clicks, transaction_id, new_amount, new_category
+        ):
+            if not save_n_clicks and not reset_n_clicks:
+                raise PreventUpdate
+
+            if not transaction_id:
+                raise PreventUpdate
+
+            ctx = callback_context
+            if not ctx.triggered:
+                raise PreventUpdate
+
+            trigger_id = ctx.triggered[0]["prop_id"]
+            print(trigger_id)
+            if "edit-modal-reset" in trigger_id:
+                delete_override(transaction_id)
+                self.get_and_set_data_if_new()  # Refresh data after edit
+                return ""
+
+            if "edit-modal-save" in trigger_id and (
+                new_amount is not None or new_category is not None
+            ):
+                upsert_override(
+                    transaction_id=transaction_id,
+                    new_amount=float(new_amount) if new_amount else None,
+                    new_category=new_category,
+                )
+                self.get_and_set_data_if_new()  # Refresh data after edit
+                return ""
+
+            raise PreventUpdate
 
 
 def create_dashboard(server):

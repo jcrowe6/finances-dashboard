@@ -13,6 +13,15 @@ def read_overrides() -> pd.DataFrame:
     return pd.read_csv(OVERRIDES_LOC)
 
 
+def delete_override(transaction_id: str) -> None:
+    """Delete an override for a specific transaction if it exists"""
+    overrides_df = read_overrides()
+
+    if transaction_id in overrides_df["transaction_id"].values:
+        overrides_df = overrides_df[overrides_df["transaction_id"] != transaction_id]
+        overrides_df.to_csv(OVERRIDES_LOC, index=False)
+
+
 def upsert_override(
     transaction_id: str,
     new_amount: Optional[float] = None,
@@ -25,7 +34,6 @@ def upsert_override(
     if transaction_id not in overrides_df["transaction_id"].values:
         # Add new override as copy from main data
         new_row = get_maindata_row_by_transaction_id(transaction_id)
-        print(new_row)
         overrides_df = pd.concat([overrides_df, pd.DataFrame(new_row)])
 
     if new_amount is not None:
@@ -35,9 +43,9 @@ def upsert_override(
 
     if new_category is not None:
         overrides_df.loc[
-            overrides_df["transaction_id"] == transaction_id, "category"
+            overrides_df["transaction_id"] == transaction_id,
+            "personal_finance_category.primary",
         ] = new_category
 
-    print(overrides_df)
     # Save back to CSV
     overrides_df.to_csv(OVERRIDES_LOC, index=False)
