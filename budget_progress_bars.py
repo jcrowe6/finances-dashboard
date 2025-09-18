@@ -1,7 +1,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
-from config import NON_EXTRA_CATEGORIES
+from config import NON_EXTRA_CATEGORIES, CATEGORY_COLOR
 
 
 def create_budget_progress_bar(category, spent_amount, budget_amount, color):
@@ -88,7 +88,7 @@ def create_budget_progress_bar(category, spent_amount, budget_amount, color):
     )
 
     category_to_name = {
-        "GENERAL_MERCHANDISE": "Groceries",
+        "Groceries": "Groceries",
         "FOOD_AND_DRINK": "Restaurants",
         "TRANSPORTATION": "Gas",
         "Total": "Total",
@@ -176,19 +176,22 @@ def create_budget_section(purchases_df, budgets):
     """
 
     # Define colors for each category (matching your existing color scheme)
-    category_colors = {
-        "GENERAL_MERCHANDISE": "lightblue",
-        "FOOD_AND_DRINK": "orange",
-        "TRANSPORTATION": "lightcoral",
-        "Extras": "lightgreen",
-    }
-
     progress_bars = []
 
     for category in budgets.keys():
         # Calculate spent amount for this category
         if category == "Total":
             category_data = purchases_df
+        elif category == "Groceries":
+            category_data = purchases_df[
+                (
+                    purchases_df["personal_finance_category.primary"]
+                    == "GENERAL_MERCHANDISE"
+                )
+                & purchases_df["name"].str.contains(
+                    "Walmart|Aldi", case=False, regex=True
+                )
+            ]
         elif category == "Extras":
             category_data = purchases_df[
                 ~purchases_df["personal_finance_category.primary"].isin(
@@ -204,7 +207,7 @@ def create_budget_section(purchases_df, budgets):
         budget_amount = budgets.get(category, 0)
 
         # Get color
-        color = category_colors.get(category, "darkgray")
+        color = CATEGORY_COLOR.get(category, "darkgray")
 
         # Create progress bar
         progress_bar = create_budget_progress_bar(
