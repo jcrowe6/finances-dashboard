@@ -1,4 +1,4 @@
-from flask import request, redirect, url_for, render_template, flash, session
+from flask import request, redirect, url_for, render_template, flash, session, Response
 from config import DASHBOARD_PASSWORD
 
 
@@ -57,12 +57,10 @@ class SimpleAuth:
             if request.endpoint in public_endpoints:
                 return
 
-            # Allow Dash internal requests
-            if request.path.startswith("/_dash"):
-                return
-
             # Require authentication for main dashboard
-            if request.path == "/" and not self.is_authenticated():
+            if not self.is_authenticated():
+                if request.path.startswith("/_dash"):
+                    return Response("Authentication required", status=401)
                 return redirect(url_for("login", next=request.url))
 
     def is_authenticated(self):
