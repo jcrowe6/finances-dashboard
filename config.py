@@ -4,6 +4,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 DASHBOARD_PASSWORD = os.environ.get("DASHBOARD_PASSWORD")
 DATA_DIR = os.environ.get("DATA_DIR")
 
+MAIN_DATA_LOC = DATA_DIR + "/transactions.csv"
+OVERRIDES_LOC = DATA_DIR + "/overrides.csv"
+
 CATEGORY_BUDGETS = {
     "Total": 2500,
     "GENERAL_MERCHANDISE": 600,

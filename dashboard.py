@@ -1,7 +1,18 @@
-from dash import Dash, html, dcc, callback, Output, Input
+from dash import (
+    Dash,
+    html,
+    dcc,
+    callback,
+    Output,
+    Input,
+    State,
+    ALL,
+)
+from dash.exceptions import PreventUpdate
 import plotly.express as px
 import pandas as pd
 import dash_bootstrap_components as dbc
+from overrides_helpers import upsert_override
 from datafetchers import fetch_transaction_df_all, fetch_csv_last_modified
 from budget_progress_bars import create_budget_section
 from config import (
@@ -85,6 +96,7 @@ class FinanceDashboard:
 
         return html.Div(
             [
+                html.Div(id="dummy-output"),  # Hidden div for the edit callback
                 html.Div(
                     [
                         # Header section
@@ -318,7 +330,7 @@ class FinanceDashboard:
                         ),
                     ],
                     className="main-container",
-                )
+                ),
             ]
         )
 
@@ -353,9 +365,15 @@ class FinanceDashboard:
                 Output("transactions-pagination", "active_page"),
                 Output("transactions-pagination", "max_value"),
             ],
-            [Input("timespan-selection", "value"), Input("source-selection", "value")],
+            [
+                Input("timespan-selection", "value"),
+                Input("source-selection", "value"),
+                Input("dummy-output", "children"),
+            ],
         )
-        def update_whole_dashboard_on_filter_change(timespan_value, source_selection):
+        def update_whole_dashboard_on_filter_change(
+            timespan_value, source_selection, dummy_val
+        ):
             self._filter_data_by_selectors(timespan_value, source_selection)
             if len(self.dff) == 0:
                 return {}, html.Div("No data available for the selected filters.")
@@ -430,6 +448,7 @@ class FinanceDashboard:
                                         "Amount",
                                         "Category",
                                         "Account",
+                                        "Actions",
                                     ]
                                 ]
                             )
@@ -470,6 +489,27 @@ class FinanceDashboard:
                                         ),
                                         html.Td(
                                             row["account_id"],
+                                            style={
+                                                "padding": "12px",
+                                                "borderBottom": "1px solid #e2e8f0",
+                                            },
+                                        ),
+                                        html.Td(
+                                            html.Button(
+                                                "Edit",
+                                                id={
+                                                    "type": "edit-transaction",
+                                                    "index": row["transaction_id"],
+                                                },
+                                                style={
+                                                    "backgroundColor": "#4299e1",
+                                                    "color": "white",
+                                                    "border": "none",
+                                                    "padding": "8px 16px",
+                                                    "borderRadius": "4px",
+                                                    "cursor": "pointer",
+                                                },
+                                            ),
                                             style={
                                                 "padding": "12px",
                                                 "borderBottom": "1px solid #e2e8f0",
@@ -521,6 +561,28 @@ class FinanceDashboard:
         )
         def toggle_transactions_visibility(n_clicks):
             return toggle_dropdown_visibility(n_clicks)
+
+        @callback(
+            Output(
+                "dummy-output", "children"
+            ),  # Used to trigger full dashboard component refresh
+            [Input({"type": "edit-transaction", "index": ALL}, "n_clicks")],
+            [State({"type": "edit-transaction", "index": ALL}, "id")],
+        )
+        def handle_edit_click(n_clicks_list, button_ids):
+            # Find which button was clicked
+            if not n_clicks_list or not any(n_clicks_list):
+                raise PreventUpdate
+
+            # Get the transaction ID of the clicked button
+            clicked_idx = next(i for i, n in enumerate(n_clicks_list) if n)
+            transaction_id = button_ids[clicked_idx]["index"]
+
+            # For now, just test the upsert function with a hardcoded test
+            # In the future, this would open a modal for editing
+            upsert_override(transaction_id=transaction_id, new_amount=99.99)
+            self.get_and_set_data_if_new()  # Refresh data after edit
+            return ""
 
 
 def create_dashboard(server):
