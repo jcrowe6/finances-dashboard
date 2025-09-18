@@ -30,6 +30,7 @@ CATEGORY_COLOR = {
     "BANK_FEES": "lightgray",
     "GOVERNMENT_AND_NON_PROFIT": "lightcyan",
     "HOME_IMPROVEMENT": "lightsalmon",
+    "TRAVEL": "lightseagreen",
     "Extras": "lightgreen",
     "Groceries": "lightblue",
 }
